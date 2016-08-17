@@ -1,0 +1,283 @@
+<html>
+<head>
+<script src="../common/hsv.js" type="text/javascript"></script>
+
+<!-- https://github.com/spite/ccapture.js -->
+<script src="CCapture.js"></script>
+<script src="Whammy.js"></script>
+<script src="gif.js"></script>
+<script src="download.js"></script>
+
+<script type="text/javascript"
+    src="https://cdn.rawgit.com/brython-dev/brython/3.2.2/www/src/brython_dist.js">
+</script>
+
+<!-- https://ace.c9.io -->
+<script src="ace.js" type="text/javascript" charset="utf-8"></script>
+</head>
+<body onload = "brython()">
+<canvas id="mycanvas" style="border: 1px solid black;position:absolute;left:0px;top:0px;"></canvas>
+
+<div id ="controls" style="width:800px;position:absolute;top:0px;right:0px;">
+Length of animation (seconds): <input type="text" value="6.28" id="duration"/><br/>
+Width (pixels): <input type="text" value="140" id="wid"/><br/>
+Height (pixels): <input type="text" value="140" id="hei"/><br/>
+<!--Frame rate (fps): <input type="text" value="30" id="framerate"/><br/>-->
+<input type="button" value="Preview" id="restart"/> <input type="button" value="Make Gif" id="gif"/>
+<input type="button" value="Make Video" id="webm"/>
+
+ <a href='help.html'>How to write the code? (documentation)</a> 
+<div id="editor" style="width:800px;height:400px;">
+# Your code goes here
+# On each frame, this function will be called.
+# It needs to draw the scene. It is provided with the current time elapsed since the animation started (in seconds).
+def render(t):
+    clear("rgba(0,0,0,0.3)")
+    
+    center_x = width/2
+    center_y = height/2
+    num_dots = 10
+    for i in range(num_dots):
+        angle = t + math.pi * 2.0 * i / num_dots
+        r = 50 * math.sin(t*2 + i / math.pi / 2 *  1.9)
+        x = center_x + r * math.sin(angle)
+        y = center_y + r * math.cos(angle)
+        size = 0.5 + abs(math.sin(i / math.pi / 2))
+        draw_circle(x, y, size, "white")
+  
+# Each time the animation restarts this function will be called
+def init():
+  pass
+</div>
+<div id="log" style="width:800px;height:200px;overflow:scroll;font:Courier-new;color:#fff;background-color:#000;"></div>
+</div>
+
+<script type="text/javascript">
+var cache = {};
+function getImg(src){
+  if(!cache[src]){
+    var img = new Image();
+    img.src = src;
+    img.onload = function(){
+      img.loaded = true;
+    }
+    cache[src] = img;
+  }
+  return cache[src];
+}
+
+function get_capturer(type) {
+  return new CCapture( {
+      framerate: 30,
+      verbose: false,
+      format: type,
+      workersPath: './'
+  } );
+}
+
+var editor = ace.edit("editor");
+editor.setTheme("ace/theme/monokai");
+editor.getSession().setMode("ace/mode/python");
+</script>
+
+<script type="text/python">
+from browser import document as doc
+from browser import timer
+from browser import window
+from browser.local_storage import storage
+import math
+import json
+import traceback
+
+current_time = 0
+width = 0
+height = 0
+def blank(t=0): pass
+init = blank
+render = blank
+
+FRAME_LENGTH = 30
+SAVE_INTERVAL = 3000
+canvas = doc["mycanvas"]
+context = canvas.getContext("2d")
+ctx = context
+running_preview = True
+
+MAX_LOGS = 10
+logs = []
+def log_error(e):
+  global logs
+  logs.append(e)
+  logs = logs[-MAX_LOGS:]
+  doc["log"].innerText = "\n".join(reversed(logs))
+  
+def stop_running():
+  global init
+  global render
+  init = blank
+  render = blank
+  
+#http://stackoverflow.com/questions/28836078/how-to-get-the-line-number-of-an-error-from-exec-or-execfile-in-python
+def safe_exec(cmd):
+  try:
+    exec(cmd)
+  except Exception as err:
+    log_error(traceback.format_exc())
+    stop_running()
+        
+
+def try_parse_int(str, defaults):
+  try:
+    return int(str)
+  except e:
+    return defaults
+    
+def try_parse_float(str, defaults):
+  try:
+    return float(str)
+  except e:
+    return defaults
+  
+def get_state():
+  return {
+    "width": try_parse_int(doc["wid"].value, 3),
+    "height": try_parse_int(doc["hei"].value, 3),
+    "reset_time": try_parse_float(doc["duration"].value, 3.0)*1000,
+    "code": window.editor.getValue()
+  }
+  
+def save_code():
+  storage["current"] = json.dumps(get_state())
+  
+def set_controls_enabled(val):
+  doc["restart"].disabled = not val
+  doc["gif"].disabled = not val
+  doc["webm"].disabled = not val
+  running_preview = not val
+  
+def make_gif():
+  make_video("gif")
+  
+def make_webm():
+  make_video("webm")
+  
+def make_video(type):
+  if(window.confirm("This will take a little while. When it's done, it will automatically download. Start?")):
+    set_controls_enabled(False)
+    capturer = window.get_capturer(type)
+    
+    reload_animation()
+    for time in range(0, int(state["reset_time"]), FRAME_LENGTH):
+      do_render(time)
+      
+    reset_animation()
+    capturer.start()
+    for time in range(0, int(state["reset_time"]), FRAME_LENGTH):
+      do_render(time)
+      capturer.capture(canvas)
+    capturer.stop()
+    capturer.save()
+    set_controls_enabled(True)
+  
+def main():
+  global state
+  state = get_state()
+  if "current" in storage:
+    state = json.loads(storage["current"])
+    doc["wid"].value = state["width"]
+    doc["hei"].value = state["height"]
+    window.editor.setValue(state["code"])
+    doc["duration"].value = state["reset_time"]/1000.0
+  
+  reload_animation()
+
+  doc["restart"].bind('click', reload_animation)
+  doc["gif"].bind('click', make_gif)
+  doc["webm"].bind('click', make_webm)
+  timer.set_interval(render_step, FRAME_LENGTH)
+  timer.set_interval(save_code, SAVE_INTERVAL)
+
+  
+
+
+def clear(color='#FFFFFF'):
+  context.fillStyle = color
+  context.fillRect(0,0,width,height)
+
+def draw_rect(x,y,wid,hei,color='#000000'):
+  context.fillStyle = color
+  context.fillRect(x,y,wid,hei)
+  
+def draw_circle(x,y,radius,color='#000000'):
+  context.fillStyle = color
+  context.beginPath();
+  context.arc(x,y,radius,0,2*math.pi);
+  ctx.fill();
+  
+def draw_line(start_x, start_y, end_x, end_y, color='#000000', thickness = 1):
+  context.strokeStyle = color
+  context.lineWidth = thickness
+  context.beginPath();
+  context.moveTo(start_x, start_y);
+  context.lineTo(end_x, end_y);
+  context.stroke();
+  
+def draw_image(url, x, y, width = None, height = None):
+  img = window.getImg(url);
+  if img.loaded:
+    if width is not None and height is not None:
+      context.drawImage(img, x, y, width, height)
+    elif width is not None and height is None:
+      context.drawImage(img, x, y, width, float(img.height)/img.width * width)
+    else:
+      context.drawImage(img, x, y)
+  
+def rgb(r, g, b):
+  return "rgb(%d,%d,%d)" % (int(r), int(g), int(b))
+  
+# start from beginning
+def reset_animation():
+  global current_time
+  current_time = 0
+  try:
+    init()
+  except Exception as err:
+    log_error(traceback.format_exc())
+    stop_running()
+ 
+# load new parameters
+def reload_animation():
+  global width
+  global height
+  global state
+  state = get_state()
+  width = state["width"]
+  height = state["height"]
+  canvas.width = width
+  canvas.height = height
+  safe_exec(state["code"])
+  clear()
+  reset_animation()
+  save_code()
+
+def render_step():
+  if running_preview:
+    current_time += FRAME_LENGTH
+    if current_time >= state["reset_time"]:
+      reset_animation()
+    do_render(current_time)
+  
+def do_render(time):
+  try:
+    render(time/1000.0)
+  except Exception as err:
+    log_error(traceback.format_exc())
+    stop_running()
+  
+main()
+
+</script>
+
+</body>
+</html>
+
