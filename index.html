@@ -30,9 +30,10 @@ Height (pixels): <input type="text" value="140" id="hei"/><br/>
 <div id="editor" style="width:800px;height:400px;">
 # Your code goes here
 # On each frame, this function will be called.
-# It needs to draw the scene. It is provided with the current time elapsed since the animation started (in seconds).
+# It needs to draw the scene. It is provided with the current time elapsed since 
+# the animation started (in seconds).
 def render(t):
-    clear("rgba(0,0,0,0.3)")
+    clear(rgba(0,0,0,0.3))
     
     center_x = width/2
     center_y = height/2
@@ -48,6 +49,13 @@ def render(t):
 # Each time the animation restarts this function will be called
 def init():
   pass
+  
+# Two warnings:
+# 1. This tool attempts to save the current version of 
+#    your code, but I'm not responsible if it messes up,
+#   'cuz I barely tested it. It does NOT save the history.
+# 2. The way I implemented this is super hacky. If stuff
+#    isn't working right try refreshing the page.
 </div>
 <div id="log" style="width:800px;height:200px;overflow:scroll;font:Courier-new;color:#fff;background-color:#000;"></div>
 </div>
@@ -234,6 +242,9 @@ def draw_image(url, x, y, width = None, height = None):
   
 def rgb(r, g, b):
   return "rgb(%d,%d,%d)" % (int(r), int(g), int(b))
+  
+def rgba(r, g, b, a):
+  return "rgba(%d,%d,%d,%f)" % (int(r), int(g), int(b), float(a))
   
 # start from beginning
 def reset_animation():

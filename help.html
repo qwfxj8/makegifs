@@ -5,5 +5,6 @@
 <p><code>draw_circle(x, y, radius, color)</code>: Draws a circle with the center at (x,y) and a certain radius and color</p>
 <p><code>draw_line(start_x, start_y, end_x, end_y, color, thickness)</code>: Draws a line from (start_x, start_y) to (end_x, end_y) with a certain color and thickness.</p>
 <p><code>draw_image(url, x, y, width, height)</code>: Load the image from the given URL online, and draw it with the top-left corner at (x, y), resized to a certain width and height. (Width and height are optional, if you leave them out the image will just stay its original size.)</p>
-<p><code>rgb(r,g,b)</code>: Make a color from a red, green, and blue component (each in the range of 0-255).
+<p><code>rgb(r,g,b)</code>: Make a color from a red, green, and blue component (each in the range of 0-255).</p>
+<p><code>rgba(r,g,b,a)</code>: Make a color from a red, green and blue component (each in the range of 0-255), plus an alpha component (in the range of 0-1). The alpha determines how transparent it is, with 0 being completely see-through and 1 completely opaque.</p>
 <p>That's all I've got for now, but I'll make more if people ask for them :) Or if you really want to you can just bypass my code and draw using the <code>context</code> object directly (<a href="https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D">documentation</a>).</p>
