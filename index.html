@@ -27,37 +27,33 @@ Height (pixels): <input type="text" value="140" id="hei"/><br/>
 <input type="button" value="Make Video" id="webm"/>
 
  <a href='help.html'>How to write the code? (documentation)</a> 
-<div id="editor" style="width:800px;height:400px;">
-# Your code goes here
+<div id="editor" style="width:800px;height:450px;"># Your code goes here
 # On each frame, this function will be called.
 # It needs to draw the scene. It is provided with the current time elapsed since 
 # the animation started (in seconds).
 def render(t):
     clear(rgba(0,0,0,0.3))
-    
-    center_x = width/2
-    center_y = height/2
     num_dots = 10
     for i in range(num_dots):
         angle = t + math.pi * 2.0 * i / num_dots
         r = 50 * math.sin(t*2 + i / math.pi / 2 *  1.9)
-        x = center_x + r * math.sin(angle)
-        y = center_y + r * math.cos(angle)
+        x = width/2 + r * math.sin(angle)
+        y = height/2 + r * math.cos(angle)
         size = 0.5 + abs(math.sin(i / math.pi / 2))
         draw_circle(x, y, size, "white")
   
-# Each time the animation restarts this function will be called
+# Each time the animation restarts init will be called
 def init():
   pass
   
 # Two warnings:
 # 1. This tool attempts to save the current version of 
 #    your code, but I'm not responsible if it messes up,
-#   'cuz I barely tested it. It does NOT save the history.
+#    'cuz I barely tested it. It does NOT save the history.
 # 2. The way I implemented this is super hacky. If stuff
 #    isn't working right try refreshing the page.
 </div>
-<div id="log" style="width:800px;height:200px;overflow:scroll;font:Courier-new;color:#fff;background-color:#000;"></div>
+<div id="log" style="width:800px;height:150px;overflow:scroll;font:Courier-new;color:#fff;background-color:#000;"></div>
 </div>
 
 <script type="text/javascript">
